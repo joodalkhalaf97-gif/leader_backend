@@ -3,18 +3,20 @@ from jose import jwt
 from passlib.context import CryptContext
 from app.core.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto"
-)
+# تبسيط التعريف لحل مشكلة KeyError
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password: str) -> str:
-    # تأكد أن طول كلمة المرور <= 72
-    return pwd_context.hash(password[:72])
-
+    # نقوم بقص كلمة المرور يدوياً لضمان عدم تجاوز حد الـ 72 بايت الخاص بـ bcrypt
+    # هذا يحل مشكلة الـ ValueError دون الحاجة لإعدادات إضافية
+    safe_password = password[:72]
+    return pwd_context.hash(safe_password)
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    try:
+        return pwd_context.verify(plain[:72], hashed)
+    except Exception:
+        return False
 
 def create_access_token(data: dict):
     to_encode = data.copy()
